@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In — TicketFlow{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 180px);padding:24px">
+    <div class="card fade-in" style="width:100%;max-width:420px;">
+        <div class="card-body" style="padding:40px 36px">
+            <div style="text-align:center;margin-bottom:32px">
+                <div
+                    style="width:56px;height:56px;background:linear-gradient(135deg,var(--blue-500),var(--blue-700));border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+                    <span class="material-icons-outlined" style="font-size:28px;color:white">lock_open</span>
+                </div>
+                <h1
+                    style="font-family:'Google Sans',sans-serif;font-size:24px;font-weight:500;color:var(--gray-900);margin-bottom:4px">
+                    Welcome back</h1>
+                <p style="font-size:14px;color:var(--gray-600)">Sign in to your TicketFlow account</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="alert alert-error">
+                <span class="material-icons-outlined" style="font-size:20px">error</span>
+                Invalid username or password. Please try again.
+            </div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_username">Username</label>
+                    <input type="text" name="username" id="id_username" class="form-control"
+                        placeholder="Enter your username" autofocus required>
+                </div>
+                <div class="form-group">
+                    <label for="id_password">Password</label>
+                    <input type="password" name="password" id="id_password" class="form-control"
+                        placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn btn-primary"
+                    style="width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:8px">
+                    <span class="material-icons-outlined" style="font-size:18px">login</span>
+                    Sign In
+                </button>
+            </form>
+
+            <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--gray-200)">
+                <p style="font-size:13px;color:var(--gray-500)">
+                    Demo accounts: <strong>manager1</strong> / <strong>agent1–5</strong><br>
+                    Password: <code
+                        style="background:var(--gray-100);padding:2px 6px;border-radius:4px;font-size:12px">pass1234</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

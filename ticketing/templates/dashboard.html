@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — TicketFlow{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header fade-in">
+        <div>
+            <h1>Dashboard</h1>
+            <p>Welcome back, <strong>{{ user.username }}</strong> — here's your overview</p>
+        </div>
+        {% if user.is_manager %}
+        <a href="{% url 'create_ticket' %}" class="btn btn-primary">
+            <span class="material-icons-outlined" style="font-size:18px">add</span>
+            New Ticket
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid fade-in fade-in-delay-1">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <span class="material-icons-outlined">confirmation_number</span>
+            </div>
+            <div class="stat-value">{{ total_tickets }}</div>
+            <div class="stat-label">Total Tickets</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <span class="material-icons-outlined">check_circle</span>
+            </div>
+            <div class="stat-value">{{ completed_tickets }}</div>
+            <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon yellow">
+                <span class="material-icons-outlined">pending</span>
+            </div>
+            <div class="stat-value">{{ open_tickets }}</div>
+            <div class="stat-label">Open</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <span class="material-icons-outlined">warning</span>
+            </div>
+            <div class="stat-value">{{ overdue_tickets }}</div>
+            <div class="stat-label">Overdue</div>
+        </div>
+    </div>
+
+    <!-- Tickets Table -->
+    <div class="card fade-in fade-in-delay-2">
+        <div class="card-header">
+            <h2>
+                <span class="material-icons-outlined"
+                    style="font-size:20px;vertical-align:middle;margin-right:8px;color:var(--gray-500)">list_alt</span>
+                {% if user.is_manager %}My Created Tickets{% else %}My Assigned Tickets{% endif %}
+            </h2>
+        </div>
+        <div class="card-body" style="padding:0">
+            {% if tickets %}
+            <table class="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Priority</th>
+                        <th>Size</th>
+                        <th>{% if user.is_manager %}Assigned To{% else %}Created By{% endif %}</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td class="ticket-title">
+                            <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.title }}</a>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ ticket.priority|lower }}">{{ ticket.priority }}</span>
+                        </td>
+                        <td>{{ ticket.size }}</td>
+                        <td>
+                            {% if user.is_manager %}
+                            {{ ticket.assigned_to|default:"Unassigned" }}
+                            {% else %}
+                            {{ ticket.created_by }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ ticket.deadline|date:"M d, Y H:i" }}
+                            {% if ticket.is_overdue %}
+                            <span class="badge badge-overdue" style="margin-left:6px;font-size:10px">OVERDUE</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ticket.is_completed %}
+                            <span class="badge badge-completed">
+                                <span class="material-icons-outlined"
+                                    style="font-size:14px;margin-right:2px">check</span>
+                                Done
+                            </span>
+                            {% else %}
+                            <span class="badge badge-open">Open</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <span class="material-icons-outlined">inbox</span>
+                <h3>No tickets yet</h3>
+                <p>{% if user.is_manager %}Create your first ticket to get started{% else %}No tickets assigned to you
+                    right now{% endif %}</p>
+                {% if user.is_manager %}
+                <a href="{% url 'create_ticket' %}" class="btn btn-primary">
+                    <span class="material-icons-outlined" style="font-size:18px">add</span>
+                    Create Ticket
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

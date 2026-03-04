@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ ticket.title }} — TicketFlow{% endblock %}
+
+{% block content %}
+<div class="page-container" style="max-width:800px">
+    <div style="margin-bottom:20px">
+        <a href="{% url 'dashboard' %}" class="nav-link"
+            style="display:inline-flex;padding:6px 0;color:var(--gray-600)">
+            <span class="material-icons-outlined" style="font-size:18px">arrow_back</span>
+            Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card fade-in">
+        <div class="card-header" style="padding:28px 28px 20px">
+            <div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+                    <h2 style="font-size:24px;font-weight:600">{{ ticket.title }}</h2>
+                    {% if ticket.is_completed %}
+                    <span class="badge badge-completed">
+                        <span class="material-icons-outlined" style="font-size:14px;margin-right:2px">check</span>
+                        Completed
+                    </span>
+                    {% elif ticket.is_overdue %}
+                    <span class="badge badge-overdue">OVERDUE</span>
+                    {% else %}
+                    <span class="badge badge-open">Open</span>
+                    {% endif %}
+                </div>
+                <p style="font-size:13px;color:var(--gray-500)">
+                    Created {{ ticket.created_at|date:"M d, Y \a\t H:i" }} by <strong>{{ ticket.created_by }}</strong>
+                </p>
+            </div>
+            <span class="badge badge-{{ ticket.priority|lower }}" style="font-size:14px;padding:6px 16px">
+                {{ ticket.priority }} Priority
+            </span>
+        </div>
+
+        <div class="card-body" style="padding:28px">
+            <!-- Description -->
+            <div style="margin-bottom:28px">
+                <h3
+                    style="font-size:13px;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
+                    Description</h3>
+                <p
+                    style="font-size:15px;line-height:1.8;color:var(--gray-800);background:var(--gray-50);padding:20px;border-radius:var(--radius);border:1px solid var(--gray-100)">
+                    {{ ticket.description }}
+                </p>
+            </div>
+
+            <!-- Metadata Grid -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+                <div
+                    style="background:var(--gray-50);padding:16px 20px;border-radius:var(--radius);border:1px solid var(--gray-100)">
+                    <div
+                        style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+                        Assigned To</div>
+                    <div
+                        style="font-size:15px;font-weight:500;color:var(--gray-900);display:flex;align-items:center;gap:8px">
+                        {% if ticket.assigned_to %}
+                        <div class="nav-avatar" style="width:28px;height:28px;font-size:12px">{{
+                            ticket.assigned_to.username|make_list|first|upper }}</div>
+                        {{ ticket.assigned_to.username }}
+                        {% if ticket.assigned_to.specialty %}
+                        <span style="font-size:12px;color:var(--gray-500)">({{ ticket.assigned_to.specialty }})</span>
+                        {% endif %}
+                        {% else %}
+                        <span style="color:var(--gray-500)">Unassigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div
+                    style="background:var(--gray-50);padding:16px 20px;border-radius:var(--radius);border:1px solid var(--gray-100)">
+                    <div
+                        style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+                        Deadline</div>
+                    <div
+                        style="font-size:15px;font-weight:500;color:{% if ticket.is_overdue %}var(--red-700){% else %}var(--gray-900){% endif %}">
+                        {{ ticket.deadline|date:"M d, Y \a\t H:i" }}
+                        {% if ticket.is_overdue %}
+                        <span class="badge badge-overdue" style="margin-left:8px;font-size:10px">OVERDUE</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div
+                    style="background:var(--gray-50);padding:16px 20px;border-radius:var(--radius);border:1px solid var(--gray-100)">
+                    <div
+                        style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+                        Size (Workload)</div>
+                    <div style="font-size:15px;font-weight:500;color:var(--gray-900)">{{ ticket.size }}</div>
+                </div>
+                <div
+                    style="background:var(--gray-50);padding:16px 20px;border-radius:var(--radius);border:1px solid var(--gray-100)">
+                    <div
+                        style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">
+                        Estimated Duration</div>
+                    <div style="font-size:15px;font-weight:500;color:var(--gray-900)">{{ ticket.duration_hours }} hour{{
+                        ticket.duration_hours|pluralize }}</div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            {% if not ticket.is_completed and ticket.assigned_to == user %}
+            <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--gray-200)">
+                <form method="POST" action="{% url 'complete_ticket' ticket.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">
+                        <span class="material-icons-outlined" style="font-size:18px">check_circle</span>
+                        Mark as Completed
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

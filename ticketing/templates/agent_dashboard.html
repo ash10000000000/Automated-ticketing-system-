@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}My Queue — TicketFlow{% endblock %}
+{% block nav_agent %}active{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header fade-in">
+        <div>
+            <h1>My Queue</h1>
+            <p>Incomplete tickets assigned to you — {{ tickets|length }} pending</p>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid fade-in fade-in-delay-1" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <span class="material-icons-outlined">assignment</span>
+            </div>
+            <div class="stat-value">{{ tickets|length }}</div>
+            <div class="stat-label">Pending Tickets</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon yellow">
+                <span class="material-icons-outlined">fitness_center</span>
+            </div>
+            <div class="stat-value">{{ total_load }}</div>
+            <div class="stat-label">Total Workload</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <span class="material-icons-outlined">warning</span>
+            </div>
+            <div class="stat-value">{{ overdue_count }}</div>
+            <div class="stat-label">Overdue</div>
+        </div>
+    </div>
+
+    <!-- Tickets -->
+    <div class="card fade-in fade-in-delay-2">
+        <div class="card-header">
+            <h2>
+                <span class="material-icons-outlined"
+                    style="font-size:20px;vertical-align:middle;margin-right:8px;color:var(--gray-500)">task</span>
+                Assigned Tickets
+            </h2>
+        </div>
+        <div class="card-body" style="padding:0">
+            {% if tickets %}
+            <table class="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Priority</th>
+                        <th>Size</th>
+                        <th>Deadline</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td class="ticket-title">
+                            <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.title }}</a>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ ticket.priority|lower }}">{{ ticket.priority }}</span>
+                        </td>
+                        <td>{{ ticket.size }}</td>
+                        <td>
+                            {{ ticket.deadline|date:"M d, Y H:i" }}
+                            {% if ticket.is_overdue %}
+                            <span class="badge badge-overdue" style="margin-left:6px;font-size:10px">OVERDUE</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="POST" action="{% url 'complete_ticket' ticket.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <span class="material-icons-outlined" style="font-size:16px">check</span>
+                                    Complete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <span class="material-icons-outlined">celebration</span>
+                <h3>All clear!</h3>
+                <p>You have no pending tickets right now. Great work!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
