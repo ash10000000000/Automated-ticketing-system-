@@ -125,3 +125,33 @@ def complete_ticket_view(request, ticket_id):
         messages.success(request, f'Ticket "{ticket.title}" marked as completed!')
 
     return redirect('agent_dashboard')
+
+
+@login_required
+def bulk_ticket_action_view(request):
+    """Handle bulk close/delete actions for managers."""
+    if not request.user.is_manager:
+        messages.error(request, 'Only managers can perform bulk actions.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        ticket_ids = request.POST.getlist('ticket_ids')
+        action = request.POST.get('action')
+
+        if not ticket_ids:
+            messages.error(request, 'No tickets selected.')
+            return redirect('dashboard')
+
+        tickets = Ticket.objects.filter(id__in=ticket_ids, created_by=request.user)
+        count = tickets.count()
+
+        if action == 'close':
+            tickets.update(is_completed=True)
+            messages.success(request, f'{count} ticket(s) marked as completed.')
+        elif action == 'delete':
+            tickets.delete()
+            messages.success(request, f'{count} ticket(s) deleted.')
+        else:
+            messages.error(request, 'Unknown action.')
+
+    return redirect('dashboard')

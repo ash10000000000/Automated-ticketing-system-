@@ -14,6 +14,7 @@ from tickets.frontend_views import (
     agent_dashboard_view,
     ticket_detail_view,
     complete_ticket_view,
+    bulk_ticket_action_view,
 )
 
 urlpatterns = [
@@ -28,6 +29,7 @@ urlpatterns = [
     path("tickets/create/", create_ticket_view, name="create_ticket"),
     path("tickets/<int:ticket_id>/", ticket_detail_view, name="ticket_detail"),
     path("tickets/<int:ticket_id>/complete/", complete_ticket_view, name="complete_ticket"),
+    path("tickets/bulk-action/", bulk_ticket_action_view, name="bulk_ticket_action"),
     path("agent/", agent_dashboard_view, name="agent_dashboard"),
 
     # REST API

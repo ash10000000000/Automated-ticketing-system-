@@ -3,6 +3,70 @@
 {% block title %}Dashboard — TicketFlow{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ── Bulk Action Bar ── */
+    .bulk-action-bar {
+        display: none;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, var(--blue-50), #f0f4ff);
+        border-bottom: 1px solid var(--blue-100);
+        animation: slideDown 0.25s ease-out;
+    }
+
+    .bulk-action-bar.visible {
+        display: flex;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .bulk-action-bar .selected-count {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--blue-600);
+        margin-right: auto;
+    }
+
+    /* ── Styled Checkboxes ── */
+    .ticket-checkbox {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 2px solid var(--gray-300);
+        cursor: pointer;
+        accent-color: var(--blue-600);
+        transition: all var(--transition);
+    }
+
+    .ticket-checkbox:checked {
+        border-color: var(--blue-600);
+    }
+
+    .ticket-table tbody tr.selected {
+        background: var(--blue-50);
+    }
+
+    /* ── Select All Checkbox ── */
+    .select-all-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-container">
     <div class="page-header fade-in">
@@ -59,72 +123,161 @@
                 {% if user.is_manager %}My Created Tickets{% else %}My Assigned Tickets{% endif %}
             </h2>
         </div>
-        <div class="card-body" style="padding:0">
-            {% if tickets %}
-            <table class="ticket-table">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Priority</th>
-                        <th>Size</th>
-                        <th>{% if user.is_manager %}Assigned To{% else %}Created By{% endif %}</th>
-                        <th>Deadline</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ticket in tickets %}
-                    <tr>
-                        <td class="ticket-title">
-                            <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.title }}</a>
-                        </td>
-                        <td>
-                            <span class="badge badge-{{ ticket.priority|lower }}">{{ ticket.priority }}</span>
-                        </td>
-                        <td>{{ ticket.size }}</td>
-                        <td>
-                            {% if user.is_manager %}
-                            {{ ticket.assigned_to|default:"Unassigned" }}
-                            {% else %}
-                            {{ ticket.created_by }}
-                            {% endif %}
-                        </td>
-                        <td>
-                            {{ ticket.deadline|date:"M d, Y H:i" }}
-                            {% if ticket.is_overdue %}
-                            <span class="badge badge-overdue" style="margin-left:6px;font-size:10px">OVERDUE</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if ticket.is_completed %}
-                            <span class="badge badge-completed">
-                                <span class="material-icons-outlined"
-                                    style="font-size:14px;margin-right:2px">check</span>
-                                Done
-                            </span>
-                            {% else %}
-                            <span class="badge badge-open">Open</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">
-                <span class="material-icons-outlined">inbox</span>
-                <h3>No tickets yet</h3>
-                <p>{% if user.is_manager %}Create your first ticket to get started{% else %}No tickets assigned to you
-                    right now{% endif %}</p>
-                {% if user.is_manager %}
-                <a href="{% url 'create_ticket' %}" class="btn btn-primary">
-                    <span class="material-icons-outlined" style="font-size:18px">add</span>
-                    Create Ticket
-                </a>
-                {% endif %}
+
+        {% if user.is_manager and tickets %}
+        <!-- Bulk Action Bar (visible when tickets are selected) -->
+        <form method="POST" action="{% url 'bulk_ticket_action' %}" id="bulkActionForm">
+            {% csrf_token %}
+            <div class="bulk-action-bar" id="bulkActionBar">
+                <span class="selected-count" id="selectedCount">0 selected</span>
+                <button type="submit" name="action" value="close" class="btn btn-success btn-sm">
+                    <span class="material-icons-outlined" style="font-size:16px">check_circle</span>
+                    Close Selected
+                </button>
+                <button type="submit" name="action" value="delete" class="btn btn-danger btn-sm"
+                    onclick="return confirm('Are you sure you want to delete the selected tickets? This cannot be undone.')">
+                    <span class="material-icons-outlined" style="font-size:16px">delete</span>
+                    Delete Selected
+                </button>
             </div>
             {% endif %}
-        </div>
+
+            <div class="card-body" style="padding:0">
+                {% if tickets %}
+                <table class="ticket-table">
+                    <thead>
+                        <tr>
+                            {% if user.is_manager %}
+                            <th style="width:40px">
+                                <div class="select-all-wrapper">
+                                    <input type="checkbox" class="ticket-checkbox" id="selectAll" title="Select all">
+                                </div>
+                            </th>
+                            {% endif %}
+                            <th>Title</th>
+                            <th>Priority</th>
+                            <th>Size</th>
+                            <th>{% if user.is_manager %}Assigned To{% else %}Created By{% endif %}</th>
+                            <th>Deadline</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr id="row-{{ ticket.id }}">
+                            {% if user.is_manager %}
+                            <td>
+                                <input type="checkbox" class="ticket-checkbox ticket-select" name="ticket_ids"
+                                    value="{{ ticket.id }}" form="bulkActionForm">
+                            </td>
+                            {% endif %}
+                            <td class="ticket-title">
+                                <a href="{% url 'ticket_detail' ticket.id %}">{{ ticket.title }}</a>
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ ticket.priority|lower }}">{{ ticket.priority }}</span>
+                            </td>
+                            <td>{{ ticket.size }}</td>
+                            <td>
+                                {% if user.is_manager %}
+                                {{ ticket.assigned_to|default:"Unassigned" }}
+                                {% else %}
+                                {{ ticket.created_by }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ ticket.deadline|date:"M d, Y H:i" }}
+                                {% if ticket.is_overdue %}
+                                <span class="badge badge-overdue" style="margin-left:6px;font-size:10px">OVERDUE</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ticket.is_completed %}
+                                <span class="badge badge-completed">
+                                    <span class="material-icons-outlined"
+                                        style="font-size:14px;margin-right:2px">check</span>
+                                    Done
+                                </span>
+                                {% else %}
+                                <span class="badge badge-open">Open</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <span class="material-icons-outlined">inbox</span>
+                    <h3>No tickets yet</h3>
+                    <p>{% if user.is_manager %}Create your first ticket to get started{% else %}No tickets assigned to
+                        you right now{% endif %}</p>
+                    {% if user.is_manager %}
+                    <a href="{% url 'create_ticket' %}" class="btn btn-primary">
+                        <span class="material-icons-outlined" style="font-size:18px">add</span>
+                        Create Ticket
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% if user.is_manager and tickets %}
+        </form>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_manager %}
+<script>
+    (function () {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.ticket-select');
+        const actionBar = document.getElementById('bulkActionBar');
+        const countEl = document.getElementById('selectedCount');
+
+        function updateUI() {
+            const checked = document.querySelectorAll('.ticket-select:checked');
+            const count = checked.length;
+
+            // Show/hide action bar
+            if (count > 0) {
+                actionBar.classList.add('visible');
+            } else {
+                actionBar.classList.remove('visible');
+            }
+
+            // Update count text
+            countEl.textContent = count + ' selected';
+
+            // Highlight selected rows
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                if (cb.checked) {
+                    row.classList.add('selected');
+                } else {
+                    row.classList.remove('selected');
+                }
+            });
+
+            // Update select-all state
+            if (checkboxes.length > 0) {
+                selectAll.checked = count === checkboxes.length;
+                selectAll.indeterminate = count > 0 && count < checkboxes.length;
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                updateUI();
+            });
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener('change', updateUI));
+    })();
+</script>
+{% endif %}
 {% endblock %}
